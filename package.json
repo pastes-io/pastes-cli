@@ -1,0 +1,50 @@
+{
+  "name": "pastes",
+  "version": "0.1.0",
+  "description": "Create and share pastes on pastes.io from your terminal. Pipe logs, upload files, get a link.",
+  "keywords": [
+    "pastes.io",
+    "pastebin",
+    "paste",
+    "cli",
+    "share",
+    "snippet",
+    "logs",
+    "gist"
+  ],
+  "homepage": "https://pastes.io/docs",
+  "bugs": "https://github.com/pastes-io/pastes-cli/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pastes-io/pastes-cli.git"
+  },
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "pastes": "dist/cli.js"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && tsx --test \"tests/**/*.test.ts\"",
+    "prepublishOnly": "npm run build",
+    "dev": "tsx src/cli.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

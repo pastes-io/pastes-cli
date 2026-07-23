@@ -1,0 +1,3 @@
+# Normalize to LF in the repository so contributors on Linux, macOS, and
+# Windows do not fight over line endings.
+* text=auto eol=lf
