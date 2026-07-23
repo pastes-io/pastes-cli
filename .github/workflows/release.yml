@@ -1,0 +1,77 @@
+name: release
+
+# Manual only. Bump "version" in package.json, merge it, then run this.
+on:
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 'Build and pack, but do not publish or tag'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  # Publishing an unverified build is the one thing worth being slow about.
+  test:
+    uses: ./.github/workflows/test.yml
+
+  publish:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the git tag and GitHub release
+      id-token: write # npm provenance attestation
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - id: meta
+        name: Read the version being released
+        run: |
+          version=$(node -p "require('./package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Releasing pastes@$version"
+
+      - name: Fail early if this version is already on npm
+        run: |
+          version=${{ steps.meta.outputs.version }}
+          # `npm view` exits 0 with empty output for an unknown version of a
+          # known package, and non-zero when the package does not exist at all,
+          # so test the output rather than the exit code.
+          published=$(npm view "pastes@$version" version --json 2>/dev/null || true)
+          if [ -n "$published" ] && [ "$published" != "[]" ]; then
+            echo "pastes@$version is already published. Bump the version in package.json first."
+            exit 1
+          fi
+
+      - run: npm install
+      - run: npm run build
+
+      - name: Pack and show exactly what will ship
+        run: |
+          npm pack
+          echo "--- tarball contents ---"
+          tar -tzf "pastes-${{ steps.meta.outputs.version }}.tgz"
+
+      - name: Publish to npm
+        if: ${{ !inputs.dry-run }}
+        # --provenance attests that this tarball was built from this repo at
+        # this commit, which anyone can verify on the npm package page.
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Tag the release and attach the published tarball
+        if: ${{ !inputs.dry-run }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=${{ steps.meta.outputs.version }}
+          gh release create "v$version" "pastes-$version.tgz" \
+            --title "v$version" \
+            --generate-notes
