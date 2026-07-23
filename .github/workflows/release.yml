@@ -31,23 +31,29 @@ jobs:
           registry-url: https://registry.npmjs.org
 
       - id: meta
-        name: Read the version being released
+        name: Read the package being released
         run: |
+          name=$(node -p "require('./package.json').name")
           version=$(node -p "require('./package.json').version")
+          echo "name=$name" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "Releasing pastes@$version"
+          echo "Releasing $name@$version"
 
       - name: Fail early if this version is already on npm
         run: |
+          name=${{ steps.meta.outputs.name }}
           version=${{ steps.meta.outputs.version }}
-          # `npm view` exits 0 with empty output for an unknown version of a
-          # known package, and non-zero when the package does not exist at all,
-          # so test the output rather than the exit code.
-          published=$(npm view "pastes@$version" version --json 2>/dev/null || true)
-          if [ -n "$published" ] && [ "$published" != "[]" ]; then
-            echo "pastes@$version is already published. Bump the version in package.json first."
-            exit 1
-          fi
+          # `npm view --json` prints its own 404 as a JSON object on stdout, so
+          # neither its output nor its exit code distinguishes "not published"
+          # from "published". Ask the registry instead: 200 means this exact
+          # version exists, 404 means it does not.
+          status=$(curl -sS -o /dev/null -w '%{http_code}' "https://registry.npmjs.org/$name/$version")
+          case "$status" in
+            404) echo "$name@$version is not on npm yet, proceeding." ;;
+            200) echo "$name@$version is already published. Bump the version in package.json first."; exit 1 ;;
+            # Never fall through to publish on an inconclusive answer.
+            *)   echo "Unexpected registry response $status for $name@$version, aborting."; exit 1 ;;
+          esac
 
       - run: npm install
       - run: npm run build
@@ -56,7 +62,7 @@ jobs:
         run: |
           npm pack
           echo "--- tarball contents ---"
-          tar -tzf "pastes-${{ steps.meta.outputs.version }}.tgz"
+          tar -tzf "${{ steps.meta.outputs.name }}-${{ steps.meta.outputs.version }}.tgz"
 
       - name: Publish to npm
         if: ${{ !inputs.dry-run }}
@@ -71,7 +77,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          name=${{ steps.meta.outputs.name }}
           version=${{ steps.meta.outputs.version }}
-          gh release create "v$version" "pastes-$version.tgz" \
+          gh release create "v$version" "$name-$version.tgz" \
             --title "v$version" \
             --generate-notes
