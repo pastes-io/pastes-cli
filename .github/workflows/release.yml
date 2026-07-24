@@ -1,11 +1,13 @@
 name: release
 
-# Manual only. Bump "version" in package.json, merge it, then run this.
+# Manual only. Bump "version" in package.json, push it, then run this.
+# Tick dry-run to build, test, and pack without publishing — that is also the
+# way to run the test suite on CI without cutting a release.
 on:
   workflow_dispatch:
     inputs:
       dry-run:
-        description: 'Build and pack, but do not publish or tag'
+        description: 'Build, test, and pack, but do not publish or tag'
         type: boolean
         default: false
 
@@ -13,12 +15,7 @@ permissions:
   contents: read
 
 jobs:
-  # Publishing an unverified build is the one thing worth being slow about.
-  test:
-    uses: ./.github/workflows/test.yml
-
-  publish:
-    needs: test
+  release:
     runs-on: ubuntu-latest
     permissions:
       contents: write # create the git tag and GitHub release
@@ -71,7 +68,14 @@ jobs:
           esac
 
       - run: npm install
-      - run: npm run build
+
+      # `npm test` builds first, so this covers the compile too. Publishing an
+      # unverified build is the one thing worth being slow about.
+      - name: Build and test
+        run: npm test
+        env:
+          # Tests spin up a local mock API; never let one launch a real browser.
+          PASTES_NO_BROWSER: '1'
 
       - name: Pack and show exactly what will ship
         run: |
