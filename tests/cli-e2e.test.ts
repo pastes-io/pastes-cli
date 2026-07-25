@@ -10,11 +10,15 @@ import test, { after, before } from 'node:test';
 // Drives the compiled binary the way a user would, against a stand-in for
 // pastes.io. Run `npm run build` in apps/pastes-cli first.
 const CLI = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist', 'cli.js');
+const CLI_VERSION = JSON.parse(
+  readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'package.json'), 'utf8')
+).version;
 
 interface RecordedRequest {
   method: string;
   url: string;
   auth?: string;
+  client?: string;
   body: any;
 }
 
@@ -45,6 +49,7 @@ before(async () => {
       method: req.method || '',
       url: req.url || '',
       auth: req.headers.authorization,
+      client: req.headers['x-pastes-client'] as string | undefined,
       body: await readBody(req)
     };
     requests.push(recorded);
@@ -120,6 +125,7 @@ test('creates a paste from stdin and prints only the URL on stdout', async () =>
   assert.equal(requests[0].method, 'POST');
   assert.equal(requests[0].url, '/api/paste');
   assert.equal(requests[0].auth, 'Bearer test-key');
+  assert.equal(requests[0].client, `pastes-cli/${CLI_VERSION}`);
   assert.equal(requests[0].body.title, 'Traceback (most recent call last):');
   assert.equal(requests[0].body.syntax, 'txt');
 });

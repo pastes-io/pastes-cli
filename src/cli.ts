@@ -27,6 +27,8 @@ function readVersion() {
   }
 }
 
+const CLI_CLIENT = `pastes-cli/${readVersion()}`;
+
 class UsageError extends Error {}
 class AuthError extends Error {}
 
@@ -42,7 +44,7 @@ function buildClient(args: ParsedArgs, { requireKey = true } = {}) {
     );
   }
   return {
-    client: new PastesClient({ apiUrl, apiKey: resolved?.apiKey }),
+    client: new PastesClient({ apiUrl, apiKey: resolved?.apiKey, client: CLI_CLIENT }),
     apiUrl,
     source: resolved?.source
   };
@@ -105,7 +107,7 @@ async function runLogin(args: ParsedArgs) {
     if (!apiKey) {
       throw new UsageError('No key received on stdin.');
     }
-    const verified = await new PastesClient({ apiUrl, apiKey }).whoami();
+    const verified = await new PastesClient({ apiUrl, apiKey, client: CLI_CLIENT }).whoami();
     const path = writeConfig({ ...readConfig(), apiKey, email: verified.success.email, apiUrl });
     note(`Logged in as ${verified.success.email}. Key saved to ${path}`, { quiet: args.quiet });
     return;

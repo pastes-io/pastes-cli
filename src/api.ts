@@ -18,6 +18,7 @@ export interface CreatePasteInput {
 export interface PastesClientOptions {
   apiUrl: string;
   apiKey?: string;
+  client?: string;
 }
 
 /** Pulls the human-readable message out of SvelteKit's error shape. */
@@ -43,10 +44,12 @@ async function readError(response: Response) {
 export class PastesClient {
   private apiUrl: string;
   private apiKey?: string;
+  private client?: string;
 
-  constructor({ apiUrl, apiKey }: PastesClientOptions) {
+  constructor({ apiUrl, apiKey, client }: PastesClientOptions) {
     this.apiUrl = apiUrl;
     this.apiKey = apiKey;
+    this.client = client;
   }
 
   private async request<T>(
@@ -54,6 +57,9 @@ export class PastesClient {
     { method = 'GET', body }: { method?: string; body?: unknown } = {}
   ): Promise<T> {
     const headers: Record<string, string> = { accept: 'application/json' };
+    if (this.client) {
+      headers['x-pastes-client'] = this.client;
+    }
     if (this.apiKey) {
       headers.authorization = `Bearer ${this.apiKey}`;
     }
