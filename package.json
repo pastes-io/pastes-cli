@@ -1,6 +1,6 @@
 {
   "name": "pastes",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Create and share pastes on pastes.io from your terminal. Pipe logs, upload files, get a link.",
   "keywords": [
     "pastes.io",
