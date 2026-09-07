@@ -6,6 +6,23 @@ Share text, code, and logs on [pastes.io](https://pastes.io) from your terminal.
 npx pastes --help
 ```
 
+## First link (free plan)
+
+Requires Node.js 20 or newer. Sign in and wait for terminal confirmation:
+
+```bash
+npx pastes login
+```
+
+Then create a sample:
+
+```bash
+printf 'Hello from my terminal\n' | npx pastes
+```
+
+In PowerShell, use `'Hello from my terminal' | npx pastes` instead.
+Open the returned link to see your sample. Free pastes expire after one month.
+
 ## Install
 
 ```bash
@@ -41,7 +58,7 @@ kubectl logs pod-1 | pastes -t "pod-1 crash" -s logs
 
 # Or point it at a file — title and syntax are inferred from the name
 pastes server.py
-pastes nginx.log --expire 1D
+pastes nginx.log
 
 # Read, list, delete
 pastes get frosty-mole-8821 > restored.txt

@@ -205,7 +205,7 @@ General options
 
 Examples
   ./deploy.sh 2>&1 | pastes
-  pastes server.py --expire 1D
+  pastes server.py
   kubectl logs pod-1 | pastes -t "pod-1 crash" -s logs
   pastes get frosty-mole-8821 > restored.txt
 
